@@ -60,6 +60,8 @@ dependencies {
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
     // Retrofit
     implementation(libs.retrofit2.retrofit)

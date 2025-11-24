@@ -1,6 +1,7 @@
 package com.example.bloodlink.navigation
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -13,7 +14,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bloodlink.data.AuthState
-import com.example.bloodlink.data.AuthState.getCurrentUser
 import com.example.bloodlink.data.SharedRequestsState
 import com.example.bloodlink.data.UserDataStore
 import com.example.bloodlink.data.getRequestIdInt
@@ -82,6 +82,108 @@ fun BloodLinkNavigation(
                 },
                 onRegisterClick = {
                     navController.navigate(Screen.RoleSelection.route)
+                }
+            )
+        }
+
+        composable(Screen.SignUp.route){
+            val sharedModel: SharedModel = viewModel()
+
+            SignUpScreen(
+                role = UserRole.DONOR,
+                onSignUpClick = {fields -> navController.navigate(Screen.RoleSelection.route)
+                },
+                onSignUpClick2 = {authResponse ->
+                    if(authResponse == null) {
+                        Log.e("SignUp", "Registration failed: authResponse is null")
+                        return@SignUpScreen
+                    }
+                    scope.launch {
+                        try {
+                            Log.d("SignUp", "Registration Successful: ${authResponse.email}, role : ${authResponse.role}")
+
+                          //  delay(200)
+                            val fullUser = AuthState.getCurrentUserDetails(context)
+
+                            if (fullUser == null) {
+                                Log.e("SignUp", "Failed to fetch user details after registration")
+                                withContext(Dispatchers.Main){
+                                    Toast.makeText(
+                                        context,
+                                        "Registration successful but failed to load profile",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                return@launch
+                            }
+                            Log.d("SignUp", "User details fetched: ${fullUser::class.simpleName}")
+                            Log.d("SignUp", "User email: ${fullUser.username}")
+
+                            sharedModel.connectedUser = fullUser
+
+                            if(sharedModel.connectedUser == null){
+                                Log.e("SignUp", "Failed to ser connectedUser in shareModel!")
+                                withContext(Dispatchers.Main){
+                                    Toast.makeText(
+                                        context,
+                                        "Error setting up user session",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                }
+                                return@launch
+                            }
+                            Log.d("SignUp", "ShareModel connectedUser set successfully")
+
+                            withContext(Dispatchers.Main){
+                                when(authResponse.role){
+                                    UserRole.DONOR -> {
+                                        DonorProfileState.savedPersonalData = null
+                                        DonorProfileState.savedVitalSigns = null
+                                        DonorProfileState.savedHealthQuestions = null
+                                        DonorProfileState.bloodBankAffiliationEmails.clear()
+                                        DonorProfileState.isEligible = null
+                                        DonorProfileState.donationHistory.clear()
+
+                                        Log.d("SignUp", "Navigating to DonorDashboard")
+
+                                        navController.navigate(Screen.DonorDashboard.route){
+                                            popUpTo(Screen.Home.route) {inclusive = true }
+                                        }
+                                    }
+                                    UserRole.DOCTOR -> {
+                                        Log.d("SignUp", "Navigating to DoctorDashboard")
+                                        navController.navigate(Screen.DoctorDashboard.route){
+                                            popUpTo(Screen.Home.route) { inclusive = true }
+                                        }
+                                    }
+                                    UserRole.BLOOD_BANK -> {
+                                        Log.d("SignUp", "Navigating to BloodBankashboard")
+                                        navController.navigate(Screen.BloodBankDashboard.route){
+                                            popUpTo(Screen.Home.route) {inclusive = true }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("SignUp", "Sign-up navigation failed: ${e.message}", e)
+                            e.printStackTrace()
+                            withContext(Dispatchers.Main){
+                                Toast.makeText(
+                                    context,
+                                    "Error during registration: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                },
+                onLoginClick = {
+                    navController.navigate(Screen.Login.route){
+                        popUpTo(Screen.Login.route) {inclusive = true}
+                    }
+                },
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -271,13 +373,13 @@ fun BloodLinkNavigation(
                         Log.e("SignUp", "Registration failed: authResponse is null")
                         return@SignUpScreen
                     }
-                    
+
                     scope.launch {
                         try {
                             Log.e("SignUp", "Registration response received: ${authResponse.email}, role: ${authResponse.role}")
 
                             // Get full user details after registration
-                            val fullUser = AuthState.getCurrentUser(context)
+                            val fullUser = AuthState.getCurrentUserDetails(context)
 
                             if (fullUser == null) {
                                 Log.e("SignUp", "Failed to fetch user details after registration")

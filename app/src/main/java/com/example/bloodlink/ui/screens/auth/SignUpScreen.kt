@@ -1,5 +1,7 @@
 package com.example.bloodlink.ui.screens.auth
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +46,8 @@ import com.example.bloodlink.data.model.enums.BloodType
 import com.example.bloodlink.data.model.enums.Gender
 import com.example.bloodlink.data.model.enums.UserRole
 import com.example.bloodlink.data.model.metiers.User
+import com.example.bloodlink.retrofit.RetrofitInstance
+import com.example.bloodlink.retrofit.TokenManager
 import com.example.bloodlink.ui.components.BloodLinkButton
 import com.example.bloodlink.ui.components.BloodLinkDropdown
 import com.example.bloodlink.ui.components.BloodLinkLogo
@@ -84,6 +88,8 @@ fun isValidPassword(password: String): Boolean {
     return hasLetter && hasDigit
 }
 
+
+
 @Composable
 fun SignUpScreen(
     role: UserRole = UserRole.DONOR,
@@ -93,6 +99,8 @@ fun SignUpScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+
     // Common fields
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
@@ -142,9 +150,24 @@ fun SignUpScreen(
         UserRole.DOCTOR -> "Doctor Registration"
         UserRole.BLOOD_BANK -> "Blood Bank Registration"
     }
+        val context = LocalContext.current
 
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
+        val scope = rememberCoroutineScope()
+
+    /*Nouveau sign up to screen 1*/
+
+    suspend fun getCurrentUserDetails(context: Context): User?{
+        val tokenManager = TokenManager(context)
+        return try {
+            Log.d("AuthState", "Fetching current user details")
+            val user = RetrofitInstance.getUserApi(context).getMe()
+            user
+        } catch (e : Exception) {
+            Log.e("AuthState", "Failed to fetch current user details: ${e.message}")
+            e.printStackTrace()
+            null
+        }
+    }
 
     Column(
         modifier = modifier

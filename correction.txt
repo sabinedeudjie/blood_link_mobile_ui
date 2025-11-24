@@ -1,0 +1,60 @@
+composable (Screen.SignUp.route) {
+
+    val sharedModel: SharedViewModel = viewModel()
+
+    SignUpScreen(
+        role: UserRole = UserRole.DONOR,
+        onSignUpClick = { fields -> rememberNavController().navigate(Screen.RoleSelection.route)
+    },
+
+    onSignUpClick2 = { authResponse1 ->
+        if (authResponse1 == null) {
+            Log.e("SignUpScreen", "Registration failed : auth response is null")
+            return@SignUpScreen
+        }
+        scope.launch {
+            try {
+                Log.d("Sign up", " Registration successfull: ${authResponse1.email}, role : ${authResponse1.role}")
+
+                val fullUser = AuthState.getCurrentUserDetails(context)
+
+                if (fullUser == null) {
+                    Log.e("SignUpScreen", "Failed to fetch user details after registration")
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Registration successfull but failed to load profile", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+
+                }
+
+                Log.d("SignUp", "User details fetched: ${fullUser::class.simpleName}")
+                sharedModel.connectedUser = fullUser
+
+                when (authResponse1.role) {
+                    UserRole.DONOR -> {
+                        DonorProfileState.savedPersonalData = null
+                        DonorProfileState.savedPersonalData= null
+                        DonorProfileState.savedVitalSigns = null
+                        DonorProfileState.savedHealthQuestions = null
+                        DonorProfileState.bloodBankAffiliationEmails.clear()
+                        DonorProfileState.isEligible = null
+                        DonorProfileState.donationHistory.clear()
+
+                        if (fullUser is Donor){
+                            DonorProfileState.password = authResponse1.token
+                        }
+                        withContext(Dispatchers.Main) {)
+                        rememberNavController().navigate(Screen.DonorDashboard.route){
+                            popUpTo(Screen.SignUp.route) {
+                                inclusive = true
+                        }
+                    }
+                    }}
+                })
+
+
+            }
+        },
+
+    }
+}
