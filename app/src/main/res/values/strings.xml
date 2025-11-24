@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BloodLink</string>
+    <string name="app_server_ip">http://192.186.1.102:8080</string>
+</resources>
