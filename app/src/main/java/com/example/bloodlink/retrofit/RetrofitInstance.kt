@@ -11,7 +11,8 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
 
-    const val BACKEND_URL = "https://blood-link-backend-g0hh.onrender.com/"
+    // lien backend de base
+    const val BACKEND_URL = "http://192.168.1.117:8080/api/" // 192.168.1.117 ici c'est mon adrese reseau, il faut changer par l'adresse ip du serveur dans lequel Audrey a déployé, ou alors le lien complet du backend
 
     fun createRetrofit(context: Context): Retrofit {
         val tokenManager = TokenManager(context)
@@ -33,9 +34,14 @@ object RetrofitInstance {
                         tokenManager.tokenFlow.first()
                     }
                 }
-            ).addInterceptor(HttpLoggingInterceptor().apply {
-                HttpLoggingInterceptor.Level.BODY
-            }).connectTimeout(60, TimeUnit.SECONDS) // Time to establish a connection
+            )
+            // Pour le débogage de l'intégration backend.
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            )
+            .connectTimeout(60, TimeUnit.SECONDS) // Time to establish a connection
             .readTimeout(60, TimeUnit.SECONDS)    // Time to wait for data to be read
             .writeTimeout(60, TimeUnit.SECONDS)   // Time to wait for data to be written
             .build()

@@ -7,7 +7,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import java.util.UUID
 
-const val donorResponseBaseUrl: String = "api/v1/donor-response"
+const val donorResponseBaseUrl: String = "v1/donor-response"
 
 interface DonorResponseApi {
 

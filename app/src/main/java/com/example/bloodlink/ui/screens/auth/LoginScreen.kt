@@ -40,8 +40,13 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    //val scope = rememberCoroutineScope()
+    var errorMessage by remember { mutableStateOf(loginError) }
+
+    // Keep UI in sync with login result coming from the caller (navigation)
+    LaunchedEffect(loginError) {
+        errorMessage = loginError
+        isLoading = false
+    }
 
     Column(
         modifier = modifier
@@ -195,8 +200,8 @@ fun LoginScreen(
                     text = "Sign In",
                     onClick = {
                         isLoading = true
+                        errorMessage = null // Clear previous errors while a new attempt is made
                         onLoginClick(email, password)
-                        errorMessage = ""
                     },
                     enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
                 )

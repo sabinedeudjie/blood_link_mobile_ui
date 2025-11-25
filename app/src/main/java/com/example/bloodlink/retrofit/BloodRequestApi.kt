@@ -9,7 +9,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import java.util.UUID
 
-const val bloodRequestBaseUrl: String = "api/blood-request"
+const val bloodRequestBaseUrl: String = "blood-request"
 
 interface BloodRequestApi {
 

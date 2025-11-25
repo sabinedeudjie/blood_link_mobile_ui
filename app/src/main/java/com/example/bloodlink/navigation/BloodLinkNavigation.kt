@@ -4,7 +4,10 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -189,8 +192,7 @@ fun BloodLinkNavigation(
         }
 
         composable(Screen.Login.route) {
-            //var loginError by remember { mutableStateOf<String?>(null) }
-            var loginError: String? = "Error"
+            var loginError by remember { mutableStateOf<String?>(null) }
 
             LoginScreen(
                 onLoginClick = { email, password ->
@@ -298,8 +300,11 @@ fun BloodLinkNavigation(
                                         }
                                     }
                                 }
+                            } else {
+                                loginError = "Impossible de vous connecter. Vérifiez vos identifiants."
                             }
                         } catch (e: Exception) {
+                            loginError = "Erreur lors de la connexion : ${e.message ?: "essayer à nouveau"}"
                             Log.e("LoginScreen", "Login failed with exception: ${e.message}")
                         }
                     }
@@ -1231,4 +1236,3 @@ fun BloodLinkNavigation(
         // TODO: Add more routes for other screens
     }
 }
-

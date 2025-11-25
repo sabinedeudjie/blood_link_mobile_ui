@@ -5,7 +5,7 @@ import com.example.bloodlink.data.model.enums.BloodType
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-const val alertBaseUrl: String = "api/v1/alert"
+const val alertBaseUrl: String = "v1/alert"
 
 interface AlertApi {
 

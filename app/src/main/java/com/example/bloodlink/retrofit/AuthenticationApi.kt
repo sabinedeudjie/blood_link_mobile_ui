@@ -7,7 +7,7 @@ import com.example.bloodlink.data.model.metiers.User
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
-const val authBaseUrl: String = "api/v1/auth"
+const val authBaseUrl: String = "v1/auth"
 interface AuthenticationApi {
 
     @POST("$authBaseUrl/signUp")

@@ -10,7 +10,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import java.util.UUID
 
-const val bankStockBaseUrl: String = "api/v1/bank-stock"
+const val bankStockBaseUrl: String = "v1/bank-stock"
 
 interface BankStockApi {
 

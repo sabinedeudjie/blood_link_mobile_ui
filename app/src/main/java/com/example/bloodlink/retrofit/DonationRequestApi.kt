@@ -8,7 +8,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import java.util.UUID
 
-const val donationRequestBaseUrl: String = "api/v1/donation-request"
+const val donationRequestBaseUrl: String = "v1/donation-request"
 
 interface DonationRequestApi {
 

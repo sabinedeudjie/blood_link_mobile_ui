@@ -8,11 +8,11 @@ class JWTInterceptor(private val tokenProvider: () -> String?) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
 
-        // URLs that should not carry Authorization
+        // URLs ouverts (sans Authorization)
         val excludedPaths = listOf(
-            "api/v1/auth/logIn",
-            "api/v1/auth/signUp",
-            "api/v1/auth/logout"
+            "v1/auth/logIn",
+            "v1/auth/signUp",
+            "v1/auth/logout"
         )
 
         // If this request matches an excluded path → skip adding token

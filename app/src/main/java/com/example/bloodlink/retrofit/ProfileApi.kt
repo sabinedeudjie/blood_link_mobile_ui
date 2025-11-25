@@ -10,7 +10,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import java.util.UUID
 
-const val profileBaseUrl: String = "api/v1/medical-profile"
+const val profileBaseUrl: String = "v1/medical-profile"
 
 interface ProfileApi {
 
