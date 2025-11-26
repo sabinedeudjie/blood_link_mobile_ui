@@ -46,11 +46,6 @@ object AuthState {
 
     // Register a new user
     suspend fun registerUser(request: RegisterRequest, context: Context): AuthenticationResponse? {
-        /*registeredUsers[email.lowercase()] = RegisteredUser(
-            email = email.lowercase(),
-            password = password,
-            role = role
-        )*/
         val tokenManager = TokenManager(context)
         try {
             Log.e("AuthState", "Start Sending Registration Request")
@@ -73,15 +68,6 @@ object AuthState {
 
     // Login: Check credentials and return user role if valid
     suspend fun login(email: String, password: String, context: Context): AuthenticationResponse? {
-        //val user = registeredUsers[email.lowercase()]
-        /*return if (user != null && user.password == password) {
-            currentUserEmail = email.lowercase()
-            currentUserRole = user.role
-            user.role
-        } else {
-            null
-        }
-        return user*/
         val tokenManager = TokenManager(context)
         return  try {
             Log.d("AuthState", "Start Sending Login Request")

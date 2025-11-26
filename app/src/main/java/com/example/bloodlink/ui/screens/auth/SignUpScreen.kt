@@ -94,7 +94,7 @@ fun isValidPassword(password: String): Boolean {
 fun SignUpScreen(
     role: UserRole = UserRole.DONOR,
     onSignUpClick: (Map<String, String>) -> Unit, // Changed to accept a map of all fields
-    onSignUpClick2: (AuthenticationResponse?) -> Unit, // Changed to accept AuthenticationResponse
+    onSignUpClick2: (User?) -> Unit, // Changed to accept AuthenticationResponse
     onLoginClick: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -726,7 +726,8 @@ fun SignUpScreen(
                                         isLoading = false
                                         if (authResponse != null) {
                                             // Registration successful, pass the response to callback
-                                            onSignUpClick2(authResponse)
+                                            val user = AuthState.getCurrentUser(context)
+                                            onSignUpClick2(user)
                                             onSignUpClick(fields)
                                         } else {
                                             // Registration failed

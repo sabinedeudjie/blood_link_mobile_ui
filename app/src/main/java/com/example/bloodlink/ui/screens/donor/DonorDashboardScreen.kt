@@ -76,19 +76,19 @@ fun DonorDashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val user: Donor = sharedModel.connectedUser as Donor
+    val user: Donor? = sharedModel.connectedUser as Donor?
 
     // Get actual donor data from DonorProfileState
     val personalData by DonorProfileState::savedPersonalData
     val savedDonations = DonorProfileState.donationHistory
 
     // Use actual data or fallback to parameters/defaults
-    val donorName = user.username ?: "###"
+    val donorName = user?.username ?: "###"
     val donorBloodType =
-        user.bloodType ?: BloodType.A_POSITIVE
+        user?.bloodType ?: BloodType.A_POSITIVE
     val donorGender =
-        user.medicalProfile?.personalInfos?.gender ?: MALE
-    val donorEmail = user.username ?: "###"
+        user?.medicalProfile?.personalInfos?.gender ?: MALE
+    val donorEmail = user?.username ?: "###"
 
     // Use saved donations or provided donations
     val allDonations: List<Donation> =
@@ -96,7 +96,7 @@ fun DonorDashboardScreen(
 
     // Get last donation date: from donation history
     val lastDonationFromHistory = allDonations.firstOrNull()
-    val lastDonationDate = user.lastDonationDate ?: LocalDate.now()
+    val lastDonationDate = user?.lastDonationDate ?: LocalDate.now()
 
     val totalDonations = allDonations.size
     val livesSaved = totalDonations

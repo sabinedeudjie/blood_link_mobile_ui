@@ -10,10 +10,10 @@ import retrofit2.http.POST
 const val authBaseUrl: String = "api/v1/auth"
 interface AuthenticationApi {
 
-    @POST("$authBaseUrl/signUp")
+    @POST("$authBaseUrl/signUp")//signUp
     suspend fun signUp(@Body registerRequest: RegisterRequest): AuthenticationResponse?
 
-    @POST("$authBaseUrl/logIn")
+    @POST("$authBaseUrl/logIn")//logIn
     suspend fun authenticate(@Body loginRequest: LoginRequest): AuthenticationResponse?
 
     @GET("$authBaseUrl/current-user")

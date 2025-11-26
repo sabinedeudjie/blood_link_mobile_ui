@@ -11,7 +11,8 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
 
-    const val BACKEND_URL = "https://blood-link-backend-g0hh.onrender.com/"
+    //const val BACKEND_URL = "https://blood-link-backend-g0hh.onrender.com/"
+    const val BACKEND_URL = "http://192.168.1.106:8080/"
 
     fun createRetrofit(context: Context): Retrofit {
         val tokenManager = TokenManager(context)

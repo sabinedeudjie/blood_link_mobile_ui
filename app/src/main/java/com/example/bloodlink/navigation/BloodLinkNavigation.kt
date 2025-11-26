@@ -90,7 +90,7 @@ fun BloodLinkNavigation(
             val sharedModel: SharedModel = viewModel()
 
             SignUpScreen(
-                role = UserRole.DONOR,
+                role = DONOR,
                 onSignUpClick = {fields -> navController.navigate(Screen.RoleSelection.route)
                 },
                 onSignUpClick2 = {authResponse ->
@@ -100,7 +100,7 @@ fun BloodLinkNavigation(
                     }
                     scope.launch {
                         try {
-                            Log.d("SignUp", "Registration Successful: ${authResponse.email}, role : ${authResponse.role}")
+                            Log.d("SignUp", "Registration Successful: ${authResponse.username}, role : ${authResponse.userRole}")
 
                           //  delay(200)
                             val fullUser = AuthState.getCurrentUserDetails(context)
@@ -135,8 +135,8 @@ fun BloodLinkNavigation(
                             Log.d("SignUp", "ShareModel connectedUser set successfully")
 
                             withContext(Dispatchers.Main){
-                                when(authResponse.role){
-                                    UserRole.DONOR -> {
+                                when(authResponse.userRole){
+                                    DONOR -> {
                                         DonorProfileState.savedPersonalData = null
                                         DonorProfileState.savedVitalSigns = null
                                         DonorProfileState.savedHealthQuestions = null
@@ -150,18 +150,20 @@ fun BloodLinkNavigation(
                                             popUpTo(Screen.Home.route) {inclusive = true }
                                         }
                                     }
-                                    UserRole.DOCTOR -> {
+                                    DOCTOR -> {
                                         Log.d("SignUp", "Navigating to DoctorDashboard")
                                         navController.navigate(Screen.DoctorDashboard.route){
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
-                                    UserRole.BLOOD_BANK -> {
+                                    BLOOD_BANK -> {
                                         Log.d("SignUp", "Navigating to BloodBankashboard")
                                         navController.navigate(Screen.BloodBankDashboard.route){
                                             popUpTo(Screen.Home.route) {inclusive = true }
                                         }
                                     }
+
+                                    else -> {}
                                 }
                             }
                         } catch (e: Exception) {
@@ -215,8 +217,7 @@ fun BloodLinkNavigation(
                                         DonorProfileState.donationHistory.clear()
 
                                         // Load all donor data from UserDataStore
-                                        val donorContactData =
-                                            UserDataStore.getDonorContactData(email)
+                                        UserDataStore.getDonorContactData(email)
                                         val donorPersonalData =
                                             UserDataStore.getDonorPersonalData(email)
                                         val donorPassword = UserDataStore.getDonorPassword(email)
@@ -224,8 +225,7 @@ fun BloodLinkNavigation(
                                             UserDataStore.getDonorVitalSigns(email)
                                         val donorHealthQuestions =
                                             UserDataStore.getDonorHealthQuestions(email)
-                                        val donorEligibility =
-                                            UserDataStore.getDonorEligibility(email)
+                                        UserDataStore.getDonorEligibility(email)
                                         val donorAffiliationEmails =
                                             UserDataStore.getDonorBloodBankAffiliationEmails(email)
 
@@ -376,7 +376,7 @@ fun BloodLinkNavigation(
 
                     scope.launch {
                         try {
-                            Log.e("SignUp", "Registration response received: ${authResponse.email}, role: ${authResponse.role}")
+                            Log.e("SignUp", "Registration response received: ${authResponse.username}, role: ${authResponse.userRole}")
 
                             // Get full user details after registration
                             val fullUser = AuthState.getCurrentUserDetails(context)
@@ -390,26 +390,28 @@ fun BloodLinkNavigation(
                             Log.d("SignUp", "Fetched user type: ${fullUser::class.simpleName}")
 
                             // Set the connected user in shared model
-                            sharedModel.connectedUser = fullUser
+                            sharedModel.connectedUser = AuthState.getCurrentUser(context) //fullUser
 
                             // Navigate based on user role
                             withContext(Dispatchers.Main) {
-                                when (authResponse.role) {
-                                    UserRole.DONOR -> {
+                                when (authResponse.userRole) {
+                                    DONOR -> {
                                         navController.navigate(Screen.DonorDashboard.route) {
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
-                                    UserRole.DOCTOR -> {
+                                    DOCTOR -> {
                                         navController.navigate(Screen.DoctorDashboard.route) {
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
-                                    UserRole.BLOOD_BANK -> {
+                                    BLOOD_BANK -> {
                                         navController.navigate(Screen.BloodBankDashboard.route) {
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
+
+                                    else -> {}
                                 }
                             }
 
@@ -1122,8 +1124,7 @@ fun BloodLinkNavigation(
         }
 
         composable(Screen.AlertResponses.route) {
-            val currentRoute =
-                navController.currentDestination?.route ?: Screen.AlertResponses.route
+            navController.currentDestination?.route ?: Screen.AlertResponses.route
             AlertResponsesScreen(
                 requestId = null, // Show all responses
                 onBackClick = {

@@ -12,6 +12,8 @@ class JWTInterceptor(private val tokenProvider: () -> String?) : Interceptor {
         val excludedPaths = listOf(
             "api/v1/auth/logIn",
             "api/v1/auth/signUp",
+            "api/v1/auth/authenticate",
+            "api/v1/auth/signUp",
             "api/v1/auth/logout"
         )
 
