@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.bloodlink.data.AuthResult
 import com.example.bloodlink.data.AuthState
 import com.example.bloodlink.data.model.dtos.requests.RegisterRequest
 import com.example.bloodlink.data.model.dtos.responses.AuthenticationResponse
@@ -63,6 +64,7 @@ import com.example.bloodlink.ui.screens.donor.PersonalDataForm
 import com.example.bloodlink.ui.theme.Black
 import com.example.bloodlink.ui.theme.BloodRed
 import com.example.bloodlink.ui.theme.GrayMedium
+import com.example.bloodlink.ui.theme.ErrorRed
 import com.example.bloodlink.ui.theme.White
 import kotlinx.coroutines.launch
 import java.time.ZoneId
@@ -110,6 +112,7 @@ fun SignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var agreeToTerms by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var signUpError by remember { mutableStateOf<String?>(null) }
 
     // Validation error messages
     var emailError by remember { mutableStateOf("") }
@@ -585,6 +588,7 @@ fun SignUpScreen(
                 BloodLinkButton(
                     text = "Register",
                     onClick = {
+                        signUpError = null
                         scope.launch {
                             if (isValid) {
                                 isLoading = true
@@ -722,20 +726,21 @@ fun SignUpScreen(
                                 isLoading = true
                                 scope.launch {
                                     try {
-                                        val authResponse = AuthState.registerUser(request, context = context)
-                                        isLoading = false
-                                        if (authResponse != null) {
+                                        val authResult: AuthResult<AuthenticationResponse> =
+                                            AuthState.registerUser(request, context = context)
+                                        if (authResult.data != null) {
                                             // Registration successful, pass the response to callback
-                                            onSignUpClick2(authResponse)
+                                            onSignUpClick2(authResult.data)
                                             onSignUpClick(fields)
                                         } else {
-                                            // Registration failed
-                                            // TODO: Show error message to user
+                                            signUpError = authResult.error
+                                                ?: "Inscription échouée. Merci de réessayer."
                                         }
                                     } catch (e: Exception) {
-                                        isLoading = false
+                                        signUpError = e.message ?: "Erreur inattendue durant l'inscription."
                                         e.printStackTrace()
-                                        // TODO: Show error message to user
+                                    } finally {
+                                        isLoading = false
                                     }
                                 }
                             }
@@ -743,6 +748,14 @@ fun SignUpScreen(
                     },
                     enabled = !isLoading && isValid
                 )
+                if (signUpError != null) {
+                    Text(
+                        text = signUpError ?: "",
+                        color = ErrorRed,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         }
 

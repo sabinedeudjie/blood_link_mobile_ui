@@ -14,6 +14,11 @@ import com.example.bloodlink.retrofit.RetrofitInstance
 import com.example.bloodlink.retrofit.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import java.io.IOException
+
+// Lightweight wrapper to return either data or a user-facing error message
+data class AuthResult<T>(val data: T? = null, val error: String? = null)
 
 // Data class to store registered user information
 data class RegisteredUser(
@@ -31,6 +36,20 @@ object AuthState {
     var currentUserEmail: String? by mutableStateOf(null)
     var currentUserRole: UserRole? by mutableStateOf(null)
 
+    private fun mapExceptionToMessage(e: Exception): String {
+        return when (e) {
+            is HttpException -> {
+                // Provide a concise message including status code
+                val code = e.code()
+                if (code in 500..599) "Serveur indisponible ($code), réessaie plus tard."
+                else if (code == 401 || code == 403) "Accès refusé. Vérifie tes identifiants ou ton token."
+                else "Requête refusée par le serveur ($code)."
+            }
+            is IOException -> "Connexion impossible. Vérifie ta connexion internet."
+            else -> e.message ?: "Erreur inconnue. Réessaie."
+        }
+    }
+
     suspend fun getCurrentUserDetails(context: Context): User? {
         val tokenManager = TokenManager(context)
         return try {
@@ -45,7 +64,7 @@ object AuthState {
     }
 
     // Register a new user
-    suspend fun registerUser(request: RegisterRequest, context: Context): AuthenticationResponse? {
+    suspend fun registerUser(request: RegisterRequest, context: Context): AuthResult<AuthenticationResponse> {
         /*registeredUsers[email.lowercase()] = RegisteredUser(
             email = email.lowercase(),
             password = password,
@@ -59,20 +78,20 @@ object AuthState {
                 tokenManager.saveToken(user.token)
                 currentUserEmail = user.email
                 currentUserRole = user.role
-                return user
+                return AuthResult(data = user)
             } else {
-                return null
+                return AuthResult(error = "Inscription échouée. Merci de vérifier les informations saisies.")
             }
         } catch (e: Exception) {
             e.printStackTrace()
             Log.e("AuthState", "Registration failed: ${e.message}")
-            return null
+            return AuthResult(error = mapExceptionToMessage(e))
         }
 
     }
 
     // Login: Check credentials and return user role if valid
-    suspend fun login(email: String, password: String, context: Context): AuthenticationResponse? {
+    suspend fun login(email: String, password: String, context: Context): AuthResult<AuthenticationResponse> {
         //val user = registeredUsers[email.lowercase()]
         /*return if (user != null && user.password == password) {
             currentUserEmail = email.lowercase()
@@ -93,17 +112,17 @@ object AuthState {
                 currentUserEmail = user.email
                 currentUserRole = user.role
                 Log.d("AuthState", "Login successful: $email")
-                 user
+                 AuthResult(data = user)
             } else {
                 Log.d("AuthState", "Login returned null")
-                null
+                AuthResult(error = "Email ou mot de passe incorrect.")
             }
                // return null // Handle unsuccessful login (e.g., wrong credentials)
         } catch (e: Exception) {
             // For a production app, you should log the error e
             e.printStackTrace()
             Log.e("AuthState", "Login failed: ${e.message}")
-            return null
+            AuthResult(error = mapExceptionToMessage(e))
         }
     }
 
@@ -289,7 +308,6 @@ object AuthState {
 ////        return registeredUsers.containsKey(email.lowercase())
 ////    }
 ///*====================================================================================================================================================================================================================*/
-
 
 
 

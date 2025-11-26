@@ -199,12 +199,13 @@ fun BloodLinkNavigation(
                     scope.launch {
                         loginError = null // Clear previous error
                         // Check credentials and get user role
-                        val userAuth: AuthenticationResponse? =
+                        val authResult =
                             AuthState.login(email, password, context)
                         print("user: $email")
 
                         try {
-                            if (userAuth != null) {
+                            if (authResult.data != null) {
+                                val userAuth = authResult.data
                                 userAuth.role
                                 when (userAuth.role.name) {
                                     DONOR.name -> {
@@ -301,7 +302,7 @@ fun BloodLinkNavigation(
                                     }
                                 }
                             } else {
-                                loginError = "Impossible de vous connecter. Vérifiez vos identifiants."
+                                loginError = authResult.error ?: "Impossible de vous connecter. Vérifiez vos identifiants."
                             }
                         } catch (e: Exception) {
                             loginError = "Erreur lors de la connexion : ${e.message ?: "essayer à nouveau"}"
