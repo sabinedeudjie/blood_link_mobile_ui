@@ -3,6 +3,7 @@ package com.example.bloodlink.navigation
 sealed class Screen(val route: String) {
     // Home
     object Home : Screen("home")
+    object HelloWorld : Screen("hello_world")
     
     // Authentication
     object Login : Screen("login")

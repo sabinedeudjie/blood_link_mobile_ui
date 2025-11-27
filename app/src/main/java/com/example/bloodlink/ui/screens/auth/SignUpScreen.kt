@@ -726,21 +726,40 @@ fun SignUpScreen(
                                 isLoading = true
                                 scope.launch {
                                     try {
+                                        Log.d("SignUpScreen", "=== STARTING REGISTRATION ===")
+                                        Log.d("SignUpScreen", "Request: $request")
+                                        
                                         val authResult: AuthResult<AuthenticationResponse> =
                                             AuthState.registerUser(request, context = context)
+                                        
+                                        Log.d("SignUpScreen", "=== AUTH RESULT RECEIVED ===")
+                                        Log.d("SignUpScreen", "Data: ${authResult.data}")
+                                        Log.d("SignUpScreen", "Error: ${authResult.error}")
+                                        
                                         if (authResult.data != null) {
+                                            Log.d("SignUpScreen", "Registration successful!")
+                                            Log.d("SignUpScreen", "Calling onSignUpClick2 callback...")
+                                            
                                             // Registration successful, pass the response to callback
+                                            // onSignUpClick2 handles navigation, so we don't call onSignUpClick
                                             onSignUpClick2(authResult.data)
-                                            onSignUpClick(fields)
+                                            // onSignUpClick(fields) ← REMOVED: causes premature navigation
+                                            
+                                            Log.d("SignUpScreen", "=== REGISTRATION COMPLETE ===")
                                         } else {
+                                            Log.e("SignUpScreen", "Registration failed: ${authResult.error}")
                                             signUpError = authResult.error
                                                 ?: "Inscription échouée. Merci de réessayer."
                                         }
                                     } catch (e: Exception) {
-                                        signUpError = e.message ?: "Erreur inattendue durant l'inscription."
+                                        Log.e("SignUpScreen", "=== EXCEPTION IN SIGNUP ===")
+                                        Log.e("SignUpScreen", "Exception type: ${e.javaClass.simpleName}")
+                                        Log.e("SignUpScreen", "Exception message: ${e.message}")
                                         e.printStackTrace()
+                                        signUpError = e.message ?: "Erreur inattendue durant l'inscription."
                                     } finally {
                                         isLoading = false
+                                        Log.d("SignUpScreen", "Loading finished")
                                     }
                                 }
                             }

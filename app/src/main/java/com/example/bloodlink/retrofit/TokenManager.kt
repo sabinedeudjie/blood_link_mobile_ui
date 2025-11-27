@@ -7,9 +7,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class TokenManager(private val context: Context) {
+// DataStore singleton - must be at top level
+private val Context.dataStore by preferencesDataStore("auth_prefs")
 
-        private val Context.dataStore by preferencesDataStore("auth_prefs")
+class TokenManager(private val context: Context) {
 
         companion object {
             val TOKEN_KEY = stringPreferencesKey("jwt_token")

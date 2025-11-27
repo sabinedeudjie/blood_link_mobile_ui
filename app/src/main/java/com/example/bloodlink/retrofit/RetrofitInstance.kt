@@ -1,6 +1,9 @@
 package com.example.bloodlink.retrofit
 
 import android.content.Context
+import com.example.bloodlink.data.model.enums.UserRole
+import com.example.bloodlink.data.model.enums.UserRoleDeserializer
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -18,10 +21,15 @@ object RetrofitInstance {
         val tokenManager = TokenManager(context)
         val client = createHttpClient(tokenManager)
 
+        // Créer un Gson personnalisé avec le désérialiseur pour UserRole
+        val gson = GsonBuilder()
+            .registerTypeAdapter(UserRole::class.java, UserRoleDeserializer())
+            .create()
+
         return Retrofit.Builder()
             .client(client)
             .baseUrl(BACKEND_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 

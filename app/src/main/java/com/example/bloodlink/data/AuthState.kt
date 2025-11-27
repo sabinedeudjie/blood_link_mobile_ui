@@ -13,6 +13,7 @@ import com.example.bloodlink.data.model.metiers.User
 import com.example.bloodlink.retrofit.RetrofitInstance
 import com.example.bloodlink.retrofit.TokenManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
@@ -39,11 +40,32 @@ object AuthState {
     private fun mapExceptionToMessage(e: Exception): String {
         return when (e) {
             is HttpException -> {
-                // Provide a concise message including status code
+                // Try to parse error message from response body
+                try {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    Log.d("AuthState", "Error body: $errorBody")
+                    
+                    // Try to extract message from JSON error response
+                    if (errorBody != null && errorBody.contains("message")) {
+                        val messageStart = errorBody.indexOf("\"message\":\"") + 11
+                        val messageEnd = errorBody.indexOf("\"", messageStart)
+                        if (messageStart > 10 && messageEnd > messageStart) {
+                            val message = errorBody.substring(messageStart, messageEnd)
+                            return message
+                        }
+                    }
+                } catch (ex: Exception) {
+                    Log.e("AuthState", "Failed to parse error body: ${ex.message}")
+                }
+                
+                // Fallback to generic messages
                 val code = e.code()
-                if (code in 500..599) "Serveur indisponible ($code), réessaie plus tard."
-                else if (code == 401 || code == 403) "Accès refusé. Vérifie tes identifiants ou ton token."
-                else "Requête refusée par le serveur ($code)."
+                when {
+                    code in 500..599 -> "Serveur indisponible ($code), réessaie plus tard."
+                    code == 401 || code == 403 -> "Accès refusé"
+                    code == 400 -> "Email ou mot de passe incorrect."
+                    else -> "Requête refusée par le serveur ($code)."
+                }
             }
             is IOException -> "Connexion impossible. Vérifie ta connexion internet."
             else -> e.message ?: "Erreur inconnue. Réessaie."
@@ -53,11 +75,25 @@ object AuthState {
     suspend fun getCurrentUserDetails(context: Context): User? {
         val tokenManager = TokenManager(context)
         return try {
-            Log.d("AuthState", "Fetching current user details")
+            Log.d("AuthState", "=== FETCHING USER DETAILS ===")
+            val token = tokenManager.tokenFlow.first()
+            Log.d("AuthState", "Token available: ${token != null}")
+            if (token != null) {
+                Log.d("AuthState", "Token: ${token.take(20)}...")
+            }
+            
+            Log.d("AuthState", "Calling /api/v1/users/me...")
             val user = RetrofitInstance.getUserApi(context).getMe()
+            
+            Log.d("AuthState", "=== USER DETAILS RECEIVED ===")
+            Log.d("AuthState", "User type: ${user?.javaClass?.simpleName}")
+            Log.d("AuthState", "User email: ${user?.username}")
+            
             user
         } catch (e : Exception) {
-            Log.e("AuthState", "Error fetching current user details: ${e.message}")
+            Log.e("AuthState", "=== ERROR FETCHING USER DETAILS ===")
+            Log.e("AuthState", "Error type: ${e.javaClass.simpleName}")
+            Log.e("AuthState", "Error message: ${e.message}")
             e.printStackTrace()
             null
         }
@@ -65,29 +101,41 @@ object AuthState {
 
     // Register a new user
     suspend fun registerUser(request: RegisterRequest, context: Context): AuthResult<AuthenticationResponse> {
-        /*registeredUsers[email.lowercase()] = RegisteredUser(
-            email = email.lowercase(),
-            password = password,
-            role = role
-        )*/
         val tokenManager = TokenManager(context)
         try {
-            Log.e("AuthState", "Start Sending Registration Request")
+            Log.d("AuthState", "=== REGISTRATION START ===")
+            Log.d("AuthState", "Email: ${request.email}")
+            Log.d("AuthState", "Phone: ${request.phoneNumber}")
+            Log.d("AuthState", "Role: ${request.userRole}")
+            Log.d("AuthState", "Sending request to backend...")
+            
             val user = RetrofitInstance.getAuthenticationApi(context).signUp(request)
+            
+            Log.d("AuthState", "=== RESPONSE RECEIVED ===")
             if (user != null) {
+                Log.d("AuthState", "User token: ${user.token.take(20)}...")
+                Log.d("AuthState", "User email: ${user.email}")
+                Log.d("AuthState", "User role: ${user.role}")
+                Log.d("AuthState", "Saving token...")
+                
                 tokenManager.saveToken(user.token)
                 currentUserEmail = user.email
                 currentUserRole = user.role
+                
+                Log.d("AuthState", "=== REGISTRATION SUCCESS ===")
                 return AuthResult(data = user)
             } else {
+                Log.e("AuthState", "User is null after signup")
                 return AuthResult(error = "Inscription échouée. Merci de vérifier les informations saisies.")
             }
         } catch (e: Exception) {
+            Log.e("AuthState", "=== REGISTRATION ERROR ===")
+            Log.e("AuthState", "Error type: ${e.javaClass.simpleName}")
+            Log.e("AuthState", "Error message: ${e.message}")
+            Log.e("AuthState", "Stack trace:")
             e.printStackTrace()
-            Log.e("AuthState", "Registration failed: ${e.message}")
             return AuthResult(error = mapExceptionToMessage(e))
         }
-
     }
 
     // Login: Check credentials and return user role if valid

@@ -11,6 +11,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -27,6 +30,7 @@ import com.example.bloodlink.data.model.enums.UserRole.BLOOD_BANK
 import com.example.bloodlink.data.model.enums.UserRole.DOCTOR
 import com.example.bloodlink.data.model.enums.UserRole.DONOR
 import com.example.bloodlink.retrofit.SharedModel
+import com.example.bloodlink.ui.screens.HelloWorldScreen
 import com.example.bloodlink.ui.screens.HomeScreen
 import com.example.bloodlink.ui.screens.auth.CheckEmailScreen
 import com.example.bloodlink.ui.screens.auth.ForgotPasswordScreen
@@ -60,9 +64,6 @@ import com.example.bloodlink.ui.screens.donor.HealthProfileScreen
 import com.example.bloodlink.ui.screens.donor.HealthQuestionFormScreen
 import com.example.bloodlink.ui.screens.donor.PersonalDataFormScreen
 import com.example.bloodlink.ui.screens.donor.VitalSignsFormScreen
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -89,6 +90,32 @@ fun BloodLinkNavigation(
             )
         }
 
+        composable(Screen.HelloWorld.route) {
+            val sharedModel: SharedModel = viewModel()
+            val connectedUser = sharedModel.connectedUser
+            
+            HelloWorldScreen(
+                userEmail = connectedUser?.username,
+                userRole = connectedUser?.let { 
+                    when (it) {
+                        is com.example.bloodlink.data.model.metiers.Donor -> "DONOR"
+                        is com.example.bloodlink.data.model.metiers.Doctor -> "DOCTOR"
+                        is com.example.bloodlink.data.model.metiers.BloodBank -> "BLOOD_BANK"
+                        else -> "UNKNOWN"
+                    }
+                },
+                onLogoutClick = {
+                    scope.launch {
+                        AuthState.logout()
+                        sharedModel.connectedUser = null
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
         composable(Screen.SignUp.route){
             val sharedModel: SharedModel = viewModel()
 
@@ -97,12 +124,16 @@ fun BloodLinkNavigation(
                 onSignUpClick = {fields -> navController.navigate(Screen.RoleSelection.route)
                 },
                 onSignUpClick2 = {authResponse ->
+                    Log.d("SignUp", "=== onSignUpClick2 CALLED ===")
+                    Log.d("SignUp", "authResponse: $authResponse")
+                    
                     if(authResponse == null) {
                         Log.e("SignUp", "Registration failed: authResponse is null")
                         return@SignUpScreen
                     }
                     scope.launch {
                         try {
+                            Log.d("SignUp", "=== STARTING POST-REGISTRATION ===")
                             Log.d("SignUp", "Registration Successful: ${authResponse.email}, role : ${authResponse.role}")
 
                           //  delay(200)
@@ -192,121 +223,43 @@ fun BloodLinkNavigation(
         }
 
         composable(Screen.Login.route) {
+            val sharedModel: SharedModel = viewModel()
             var loginError by remember { mutableStateOf<String?>(null) }
 
             LoginScreen(
                 onLoginClick = { email, password ->
                     scope.launch {
-                        loginError = null // Clear previous error
-                        // Check credentials and get user role
-                        val authResult =
-                            AuthState.login(email, password, context)
-                        print("user: $email")
-
+                        loginError = null
+                        Log.d("Login", "=== STARTING LOGIN ===")
+                        
                         try {
+                            val authResult = AuthState.login(email, password, context)
+                            
                             if (authResult.data != null) {
-                                val userAuth = authResult.data
-                                userAuth.role
-                                when (userAuth.role.name) {
-                                    DONOR.name -> {
-                                        // Reset DonorProfileState first to clear any previous user's data
-                                        DonorProfileState.savedPersonalData = null
-                                        DonorProfileState.savedVitalSigns = null
-                                        DonorProfileState.savedHealthQuestions = null
-                                        DonorProfileState.bloodBankAffiliationEmails.clear()
-                                        DonorProfileState.isEligible = null
-                                        DonorProfileState.donationHistory.clear()
-
-                                        // Load all donor data from UserDataStore
-                                        val donorContactData =
-                                            UserDataStore.getDonorContactData(email)
-                                        val donorPersonalData =
-                                            UserDataStore.getDonorPersonalData(email)
-                                        val donorPassword = UserDataStore.getDonorPassword(email)
-                                        val donorVitalSigns =
-                                            UserDataStore.getDonorVitalSigns(email)
-                                        val donorHealthQuestions =
-                                            UserDataStore.getDonorHealthQuestions(email)
-                                        val donorEligibility =
-                                            UserDataStore.getDonorEligibility(email)
-                                        val donorAffiliationEmails =
-                                            UserDataStore.getDonorBloodBankAffiliationEmails(email)
-
-                                        // Populate DonorProfileState with loaded data
-                                        if (donorPersonalData != null) {
-                                            DonorProfileState.savedPersonalData = donorPersonalData
-                                        }
-                                        if (donorPassword != null) {
-                                            DonorProfileState.password = donorPassword
-                                        }
-                                        if (donorVitalSigns != null) {
-                                            DonorProfileState.savedVitalSigns = donorVitalSigns
-                                        }
-                                        if (donorHealthQuestions != null) {
-                                            DonorProfileState.savedHealthQuestions =
-                                                donorHealthQuestions
-                                        }
-
-                                        if (donorAffiliationEmails.isNotEmpty()) {
-                                            DonorProfileState.bloodBankAffiliationEmails.clear()
-                                            DonorProfileState.bloodBankAffiliationEmails.addAll(
-                                                donorAffiliationEmails
-                                            )
-                                        }
-
-                                        navController.navigate(Screen.DonorDashboard.route) {
-                                            popUpTo(Screen.Home.route) { inclusive = true }
-                                        }
-                                    }
-
-                                    DOCTOR.name -> {
-                                        // Load doctor data from UserDataStore
-                                        val doctorData = UserDataStore.getDoctorData(email)
-                                        val doctorPassword = UserDataStore.getDoctorPassword(email)
-                                        if (doctorData != null) {
-                                            DoctorProfileState.savedDoctorData =
-                                                doctorData
-                                            if (doctorPassword != null) {
-                                                DoctorProfileState.password =
-                                                    doctorPassword
-                                            }
-                                        }
-                                        navController.navigate(Screen.DoctorDashboard.route) {
-                                            popUpTo(Screen.Home.route) { inclusive = true }
-                                        }
-                                    }
-
-                                    BLOOD_BANK.name -> {
-                                        // Load blood bank data from UserDataStore
-                                        val bloodBankData = UserDataStore.getBloodBankData(email)
-                                        val bloodBankPassword =
-                                            UserDataStore.getBloodBankPassword(email)
-                                        if (bloodBankData != null) {
-                                            BloodBankProfileState.savedBloodBankData =
-                                                bloodBankData
-                                            if (bloodBankPassword != null) {
-                                                BloodBankProfileState.password =
-                                                    bloodBankPassword
-                                            }
-                                        }
-                                        navController.navigate(Screen.BloodBankDashboard.route) {
-                                            popUpTo(Screen.Home.route) { inclusive = true }
-                                        }
-                                    }
-
-                                    else -> {
-                                        // Unknown role, navigate to home
-                                        navController.navigate(Screen.Home.route) {
-                                            popUpTo(Screen.Home.route) { inclusive = true }
-                                        }
+                                Log.d("Login", "Login successful, navigating to HelloWorld...")
+                                
+                                // Try to get full user details from backend (optional)
+                                val fullUser = AuthState.getCurrentUserDetails(context)
+                                
+                                if (fullUser != null) {
+                                    Log.d("Login", "User details fetched: ${fullUser::class.simpleName}")
+                                    sharedModel.connectedUser = fullUser
+                                } else {
+                                    Log.w("Login", "Could not fetch user details, but continuing to HelloWorld")
+                                }
+                                
+                                // Navigate to HelloWorld screen regardless
+                                withContext(Dispatchers.Main) {
+                                    navController.navigate(Screen.HelloWorld.route) {
+                                        popUpTo(Screen.Home.route) { inclusive = true }
                                     }
                                 }
                             } else {
                                 loginError = authResult.error ?: "Impossible de vous connecter. Vérifiez vos identifiants."
                             }
                         } catch (e: Exception) {
+                            Log.e("Login", "Login failed with exception: ${e.message}", e)
                             loginError = "Erreur lors de la connexion : ${e.message ?: "essayer à nouveau"}"
-                            Log.e("LoginScreen", "Login failed with exception: ${e.message}")
                         }
                     }
                 },
@@ -375,6 +328,9 @@ fun BloodLinkNavigation(
                 },*/
 
                 onSignUpClick2 = { authResponse ->
+                    Log.d("SignUp", "=== onSignUpClick2 CALLED (route 2) ===")
+                    Log.d("SignUp", "authResponse: $authResponse")
+                    
                     if (authResponse == null) {
                         Log.e("SignUp", "Registration failed: authResponse is null")
                         return@SignUpScreen
@@ -382,7 +338,8 @@ fun BloodLinkNavigation(
 
                     scope.launch {
                         try {
-                            Log.e("SignUp", "Registration response received: ${authResponse.email}, role: ${authResponse.role}")
+                            Log.d("SignUp", "=== STARTING POST-REGISTRATION (route 2) ===")
+                            Log.d("SignUp", "Registration response received: ${authResponse.email}, role: ${authResponse.role}")
 
                             // Get full user details after registration
                             val fullUser = AuthState.getCurrentUserDetails(context)
@@ -458,15 +415,47 @@ fun BloodLinkNavigation(
         }
 
         composable(Screen.SignUpDonor.route) {
+            val sharedModel: SharedModel = viewModel()
             SignUpScreen(
                 role = DONOR,
                 onSignUpClick = { fields ->
-                    // TODO: Handle donor sign up logic with fields map
-                    navController.navigate(Screen.DonorDashboard.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
+                    // Navigation handled by onSignUpClick2
                 },
-                onSignUpClick2 = { user ->
+                onSignUpClick2 = { authResponse ->
+                    Log.d("SignUp", "=== onSignUpClick2 CALLED (SignUpDonor route) ===")
+                    Log.d("SignUp", "authResponse: $authResponse")
+                    
+                    if (authResponse == null) {
+                        Log.e("SignUp", "Registration failed: authResponse is null")
+                        return@SignUpScreen
+                    }
+
+                    scope.launch {
+                        try {
+                            Log.d("SignUp", "=== STARTING POST-REGISTRATION (SignUpDonor) ===")
+                            Log.d("SignUp", "Registration Successful: ${authResponse.email}, role: ${authResponse.role}")
+
+                            // Try to get full user details after registration (optional)
+                            val fullUser = AuthState.getCurrentUserDetails(context)
+
+                            if (fullUser != null) {
+                                Log.d("SignUp", "User details fetched: ${fullUser::class.simpleName}")
+                                sharedModel.connectedUser = fullUser
+                            } else {
+                                Log.w("SignUp", "Could not fetch user details, but continuing to HelloWorld")
+                            }
+
+                            // Navigate to HelloWorld regardless
+                            withContext(Dispatchers.Main) {
+                                navController.navigate(Screen.HelloWorld.route) {
+                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("SignUp", "Error during post-registration: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    }
                 },
                 onLoginClick = {
                     navController.navigate(Screen.Login.route)
@@ -478,15 +467,29 @@ fun BloodLinkNavigation(
         }
 
         composable(Screen.SignUpDoctor.route) {
+            val sharedModel: SharedModel = viewModel()
             SignUpScreen(
                 role = DOCTOR,
                 onSignUpClick = { fields ->
-                    // TODO: Handle doctor sign up logic with fields map
-                    navController.navigate(Screen.DoctorDashboard.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
+                    // Navigation handled by onSignUpClick2
                 },
-                onSignUpClick2 = { user ->
+                onSignUpClick2 = { authResponse ->
+                    if (authResponse == null) return@SignUpScreen
+                    scope.launch {
+                        try {
+                            val fullUser = AuthState.getCurrentUserDetails(context)
+                            if (fullUser != null) {
+                                sharedModel.connectedUser = fullUser
+                                withContext(Dispatchers.Main) {
+                                    navController.navigate(Screen.HelloWorld.route) {
+                                        popUpTo(Screen.Home.route) { inclusive = true }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 },
                 onLoginClick = {
                     navController.navigate(Screen.Login.route)
@@ -498,15 +501,29 @@ fun BloodLinkNavigation(
         }
 
         composable(Screen.SignUpBloodBank.route) {
+            val sharedModel: SharedModel = viewModel()
             SignUpScreen(
                 role = BLOOD_BANK,
                 onSignUpClick = { fields ->
-                    // TODO: Handle blood bank sign up logic with fields map
-                    navController.navigate(Screen.BloodBankDashboard.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
+                    // Navigation handled by onSignUpClick2
                 },
-                onSignUpClick2 = { user ->
+                onSignUpClick2 = { authResponse ->
+                    if (authResponse == null) return@SignUpScreen
+                    scope.launch {
+                        try {
+                            val fullUser = AuthState.getCurrentUserDetails(context)
+                            if (fullUser != null) {
+                                sharedModel.connectedUser = fullUser
+                                withContext(Dispatchers.Main) {
+                                    navController.navigate(Screen.HelloWorld.route) {
+                                        popUpTo(Screen.Home.route) { inclusive = true }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 },
                 onLoginClick = {
                     navController.navigate(Screen.Login.route)
