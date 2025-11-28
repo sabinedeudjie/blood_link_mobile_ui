@@ -178,21 +178,21 @@ fun BloodLinkNavigation(
                                         DonorProfileState.isEligible = null
                                         DonorProfileState.donationHistory.clear()
 
-                                        Log.d("SignUp", "Navigating to DonorDashboard")
+                                        Log.d("SignUp", "Navigating to DonorProfile")
 
-                                        navController.navigate(Screen.DonorDashboard.route){
+                                        navController.navigate(Screen.DonorProfile.route){
                                             popUpTo(Screen.Home.route) {inclusive = true }
                                         }
                                     }
                                     UserRole.DOCTOR -> {
-                                        Log.d("SignUp", "Navigating to DoctorDashboard")
-                                        navController.navigate(Screen.DoctorDashboard.route){
+                                        Log.d("SignUp", "Navigating to DoctorProfile")
+                                        navController.navigate(Screen.DoctorProfile.route){
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
                                     UserRole.BLOOD_BANK -> {
-                                        Log.d("SignUp", "Navigating to BloodBankashboard")
-                                        navController.navigate(Screen.BloodBankDashboard.route){
+                                        Log.d("SignUp", "Navigating to BloodBankProfile")
+                                        navController.navigate(Screen.BloodBankProfile.route){
                                             popUpTo(Screen.Home.route) {inclusive = true }
                                         }
                                     }
@@ -236,23 +236,47 @@ fun BloodLinkNavigation(
                             val authResult = AuthState.login(email, password, context)
                             
                             if (authResult.data != null) {
-                                Log.d("Login", "Login successful, navigating to HelloWorld...")
+                                Log.d("Login", "Login successful, fetching user details...")
                                 
-                                // Try to get full user details from backend (optional)
+                                // Get full user details from backend
                                 val fullUser = AuthState.getCurrentUserDetails(context)
                                 
                                 if (fullUser != null) {
                                     Log.d("Login", "User details fetched: ${fullUser::class.simpleName}")
                                     sharedModel.connectedUser = fullUser
-                                } else {
-                                    Log.w("Login", "Could not fetch user details, but continuing to HelloWorld")
-                                }
-                                
-                                // Navigate to HelloWorld screen regardless
-                                withContext(Dispatchers.Main) {
-                                    navController.navigate(Screen.HelloWorld.route) {
-                                        popUpTo(Screen.Home.route) { inclusive = true }
+                                    
+                                    // Navigate based on user type
+                                    withContext(Dispatchers.Main) {
+                                        when (fullUser) {
+                                            is com.example.bloodlink.data.model.metiers.Donor -> {
+                                                Log.d("Login", "Navigating to DonorProfile")
+                                                navController.navigate(Screen.DonorProfile.route) {
+                                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                                }
+                                            }
+                                            is com.example.bloodlink.data.model.metiers.Doctor -> {
+                                                Log.d("Login", "Navigating to DoctorProfile")
+                                                navController.navigate(Screen.DoctorProfile.route) {
+                                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                                }
+                                            }
+                                            is com.example.bloodlink.data.model.metiers.BloodBank -> {
+                                                Log.d("Login", "Navigating to BloodBankProfile")
+                                                navController.navigate(Screen.BloodBankProfile.route) {
+                                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                                }
+                                            }
+                                            else -> {
+                                                Log.w("Login", "Unknown user type, navigating to Home")
+                                                navController.navigate(Screen.Home.route) {
+                                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                                }
+                                            }
+                                        }
                                     }
+                                } else {
+                                    Log.e("Login", "Could not fetch user details after login")
+                                    loginError = "Erreur lors de la récupération du profil utilisateur"
                                 }
                             } else {
                                 loginError = authResult.error ?: "Impossible de vous connecter. Vérifiez vos identifiants."
@@ -359,17 +383,20 @@ fun BloodLinkNavigation(
                             withContext(Dispatchers.Main) {
                                 when (authResponse.role) {
                                     UserRole.DONOR -> {
-                                        navController.navigate(Screen.DonorDashboard.route) {
+                                        Log.d("SignUp", "Navigating to DonorProfile")
+                                        navController.navigate(Screen.DonorProfile.route) {
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
                                     UserRole.DOCTOR -> {
-                                        navController.navigate(Screen.DoctorDashboard.route) {
+                                        Log.d("SignUp", "Navigating to DoctorProfile")
+                                        navController.navigate(Screen.DoctorProfile.route) {
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
                                     UserRole.BLOOD_BANK -> {
-                                        navController.navigate(Screen.BloodBankDashboard.route) {
+                                        Log.d("SignUp", "Navigating to BloodBankProfile")
+                                        navController.navigate(Screen.BloodBankProfile.route) {
                                             popUpTo(Screen.Home.route) { inclusive = true }
                                         }
                                     }
@@ -435,20 +462,28 @@ fun BloodLinkNavigation(
                             Log.d("SignUp", "=== STARTING POST-REGISTRATION (SignUpDonor) ===")
                             Log.d("SignUp", "Registration Successful: ${authResponse.email}, role: ${authResponse.role}")
 
-                            // Try to get full user details after registration (optional)
+                            // Get full user details after registration
                             val fullUser = AuthState.getCurrentUserDetails(context)
 
                             if (fullUser != null) {
                                 Log.d("SignUp", "User details fetched: ${fullUser::class.simpleName}")
                                 sharedModel.connectedUser = fullUser
+                                
+                                // Navigate to DonorProfile
+                                withContext(Dispatchers.Main) {
+                                    Log.d("SignUp", "Navigating to DonorProfile")
+                                    navController.navigate(Screen.DonorProfile.route) {
+                                        popUpTo(Screen.Home.route) { inclusive = true }
+                                    }
+                                }
                             } else {
-                                Log.w("SignUp", "Could not fetch user details, but continuing to HelloWorld")
-                            }
-
-                            // Navigate to HelloWorld regardless
-                            withContext(Dispatchers.Main) {
-                                navController.navigate(Screen.HelloWorld.route) {
-                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                Log.e("SignUp", "Could not fetch user details after registration")
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Registration successful but failed to load profile",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         } catch (e: Exception) {
@@ -474,19 +509,43 @@ fun BloodLinkNavigation(
                     // Navigation handled by onSignUpClick2
                 },
                 onSignUpClick2 = { authResponse ->
-                    if (authResponse == null) return@SignUpScreen
+                    Log.d("SignUp", "=== onSignUpClick2 CALLED (SignUpDoctor route) ===")
+                    Log.d("SignUp", "authResponse: $authResponse")
+                    
+                    if (authResponse == null) {
+                        Log.e("SignUp", "Registration failed: authResponse is null")
+                        return@SignUpScreen
+                    }
+                    
                     scope.launch {
                         try {
+                            Log.d("SignUp", "=== STARTING POST-REGISTRATION (SignUpDoctor) ===")
+                            Log.d("SignUp", "Registration Successful: ${authResponse.email}, role: ${authResponse.role}")
+                            
                             val fullUser = AuthState.getCurrentUserDetails(context)
                             if (fullUser != null) {
+                                Log.d("SignUp", "User details fetched: ${fullUser::class.simpleName}")
                                 sharedModel.connectedUser = fullUser
+                                
+                                // Navigate to DoctorProfile
                                 withContext(Dispatchers.Main) {
-                                    navController.navigate(Screen.HelloWorld.route) {
+                                    Log.d("SignUp", "Navigating to DoctorProfile")
+                                    navController.navigate(Screen.DoctorProfile.route) {
                                         popUpTo(Screen.Home.route) { inclusive = true }
                                     }
                                 }
+                            } else {
+                                Log.e("SignUp", "Could not fetch user details after registration")
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Registration successful but failed to load profile",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         } catch (e: Exception) {
+                            Log.e("SignUp", "Error during post-registration: ${e.message}")
                             e.printStackTrace()
                         }
                     }
@@ -508,19 +567,43 @@ fun BloodLinkNavigation(
                     // Navigation handled by onSignUpClick2
                 },
                 onSignUpClick2 = { authResponse ->
-                    if (authResponse == null) return@SignUpScreen
+                    Log.d("SignUp", "=== onSignUpClick2 CALLED (SignUpBloodBank route) ===")
+                    Log.d("SignUp", "authResponse: $authResponse")
+                    
+                    if (authResponse == null) {
+                        Log.e("SignUp", "Registration failed: authResponse is null")
+                        return@SignUpScreen
+                    }
+                    
                     scope.launch {
                         try {
+                            Log.d("SignUp", "=== STARTING POST-REGISTRATION (SignUpBloodBank) ===")
+                            Log.d("SignUp", "Registration Successful: ${authResponse.email}, role: ${authResponse.role}")
+                            
                             val fullUser = AuthState.getCurrentUserDetails(context)
                             if (fullUser != null) {
+                                Log.d("SignUp", "User details fetched: ${fullUser::class.simpleName}")
                                 sharedModel.connectedUser = fullUser
+                                
+                                // Navigate to BloodBankProfile
                                 withContext(Dispatchers.Main) {
-                                    navController.navigate(Screen.HelloWorld.route) {
+                                    Log.d("SignUp", "Navigating to BloodBankProfile")
+                                    navController.navigate(Screen.BloodBankProfile.route) {
                                         popUpTo(Screen.Home.route) { inclusive = true }
                                     }
                                 }
+                            } else {
+                                Log.e("SignUp", "Could not fetch user details after registration")
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        context,
+                                        "Registration successful but failed to load profile",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                         } catch (e: Exception) {
+                            Log.e("SignUp", "Error during post-registration: ${e.message}")
                             e.printStackTrace()
                         }
                     }

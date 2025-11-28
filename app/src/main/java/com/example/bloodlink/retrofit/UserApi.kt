@@ -6,7 +6,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import java.util.UUID
 
-const val userBaseUrl: String = "v1/users"
+const val userBaseUrl: String = "v1/user"
 
 interface UserApi {
 
